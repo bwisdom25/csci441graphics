@@ -20,12 +20,18 @@ typedef struct {
 RGB;
 
 /* ----------------------- */
-
+/*point class*/
+class point{
+	public:
+		double x,y,z;
+};
 /*vector class*/
 class vector{
 	public:
 		double x,y,z;
-		double dot(const vector b); 
+		double dot(const vector b);
+		void setVec(const point a, const point b);  
+		double getMag(); 
 };
 
 vector operator+(const vector a, const vector b)
@@ -38,17 +44,34 @@ vector operator+(const vector a, const vector b)
 	return result; 
 }
 
+vector operator*(const double d, const vector a) 
+{
+	vector result; 
+	result.x = d*a.x;
+	result.y = d*a.y; 
+	result.z = d*a.z; 
+
+	return result; 
+}
 double vector::dot( const vector b)
 {
 	return((x*b.x)+(y*b.y)+(z*b.z));
 }
 /*-------------------------------*/ 
 
-/*point class*/
-class point{
-	public:
-		double x,y,z;
-};
+
+
+void vector::setVec(const point a, const point b)
+{
+	x=a.x-b.x; 
+	y=a.y-b.y;
+	z=a.z-b.z;
+}
+
+double vector::getMag()
+{
+	return( sqrt((pow(x,2))+(pow(y,2))+(pow(z,2))) );
+}
 
 point operator+(const point a, const point b) 
 {
@@ -149,12 +172,58 @@ void image::save_to_ppm_file ( char *filename )
       ofs.write((char*)&b,sizeof(char));
     }
 }
+/*primative intersection functions*/ 
 
+double intersectionS(ray r,sphere s){
+//Define coefficients for Quadtratic eqn
+	double A,B,C,Det,t1,t2; 
+	vector co; 
+	co.setVec(s.center,r.origin); 
+
+	A = pow(co.getMag(),2) - pow(s.radius,2); 
+	B = r.direction.dot(2*co);
+	C = pow(r.direction.getMag(),2); 
+
+	//Caclulate the Determinant 
+	Det = pow(B,2) - (4*A*C); 
+
+	//Take Appropriate Actions (reguarding t-value) 
+	if( Det < 0 ){ //Negative Det 
+		return -1.0; //ANY Negative val. corresponds to NO Solution 
+    }else{ 
+		t1=(-B+sqrt(Det))/(2*A);
+		t2=(-B-sqrt(Det))/(2*A);
+		if(t1 == 0){
+			if(t2 > 0){
+				return t2;
+			}else{
+				return -1.0; //line is tangent, but not on ray
+			}
+		}else if(t2 == 0){
+				if(t2 > 0){
+					return t2;
+				}else{
+					return -1.0; //line is tangent, but not on ray
+				}
+		}else if(t1 < 0 && t2 < 0){
+			return -1.0;//no intersection 
+		}else if(t1 > 0 && t2<0){ return t1; }
+		 else if(t2 > 0 && t1<0){ return t2; } 
+         else{
+			if(t1 < t2){ return t1; } 
+			else if(t2 < t1){ return t2; }
+         }
+    }		 
+}
+	 
 
 /* ----------- Reading the input file ---------- */
 
 // global variables
 int resolution_x, resolution_y;
+triangle *T;
+sphere *S;
+int n_T,n_S;
 
 // ... and the input file reading function
 void read_input_file()
@@ -181,6 +250,9 @@ void read_input_file()
   ifs >> ambient_light_intensity;
   ifs >> number_of_primitives;
 
+  //allocate memory to hold primitives(wasting memory but oh well) 
+  T = new triangle[number_of_primitives];
+  S = new sphere[number_of_primitives];
   // save all this info to your datastructures or global variables here
 
   for ( int i=0; i<number_of_primitives; i++ )
@@ -192,6 +264,7 @@ void read_input_file()
 	case 's':
 	case 'S':
 	  {
+
 	    double center[3];
 	    double radius;
 	    double k_diffuse[3];
