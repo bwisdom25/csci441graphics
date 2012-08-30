@@ -15,35 +15,92 @@ using namespace std;
 /* ------------ typedefs -------------- */
 
 typedef struct {
-  double r,g,b;
+	double r,g,b;
 }
 RGB;
 
-class image {
-  int xsize,ysize; // resolution
-  RGB *rgb;        // pixel intensities
- public:
-  image ( int m, int n );       // allocates image of specified size
-  RGB &pixel ( int i, int j );  // access to a specific pixel
-  void save_to_ppm_file ( char *filename );
+/* ----------------------- */
+
+/*vector class*/
+class vector{
+	public:
+		double x,y,z;
+		double dot(const vector b); 
 };
 
-
-/* ----------- image class: methods ---------- */
-
-image::image ( int m, int n ) : xsize(m), ysize(n)
+vector operator+(const vector a, const vector b)
 {
-  rgb = new RGB[m*n];
+	vector result; 
+	result.x = a.x + b.x;
+	result.y = a.y + b.y; 
+	result.z = a.z + b.z; 
+
+	return result; 
 }
 
-/* ----------------------- */
-
-RGB &image::pixel ( int i, int j )
+double vector::dot( const vector b)
 {
-  return rgb[i+xsize*j];
+	return((x*b.x)+(y*b.y)+(z*b.z));
+}
+/*-------------------------------*/ 
+
+/*point class*/
+class point{
+	public:
+		double x,y,z;
+};
+
+point operator+(const point a, const point b) 
+{
+	point result; 
+	result.x = a.x + b.x;
+	result.y = a.y + b.y; 
+	result.z = a.z + b.z; 
+
+	return result;
 }
 
-/* ----------------------- */
+point operator-(const point a, const point b) 
+{
+	point result; 
+	result.x = a.x + b.x;
+	result.y = a.y + b.y; 
+	result.z = a.z + b.z; 
+
+	return result;
+} 
+/*--------------------------------------------*/
+/*material class*/ 
+class material{
+	public:
+		double k_diff_r,k_diff_g,k_diff_b; 
+		double k_amb_r,k_amb_g,k_amb_b; 
+		double k_spec; 
+		double n_spec;
+}; 
+
+/*ray class*/ 
+class ray{ //charles 
+	public:
+		point origin; 
+		vector direction; 
+}; 
+
+/*sphere class*/ 
+class sphere{
+	public:
+		point center;
+		double radius;
+		material m; 
+}; 
+
+/*triangle class*/ 
+class triangle{
+	public: 
+		point a1,a2,a3;
+		material m;
+};
+		
 
 static unsigned char clampnround ( double x )
 {
@@ -55,6 +112,26 @@ static unsigned char clampnround ( double x )
 }
 
 /* ----------------------- */
+
+/*image class*/ 
+class image {
+	int xsize,ysize; // resolution
+  	RGB *rgb;        // pixel intensities
+ public:
+	image ( int m, int n );       // allocates image of specified size
+	RGB &pixel ( int i, int j );  // access to a specific pixel
+	void save_to_ppm_file ( char *filename );
+};
+
+image::image ( int m, int n ) : xsize(m), ysize(n)
+{
+	rgb = new RGB[m*n];
+}
+
+RGB &image::pixel ( int i, int j )
+{
+	return rgb[i+xsize*j];
+}
 
 void image::save_to_ppm_file ( char *filename )
 {
