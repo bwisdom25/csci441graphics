@@ -251,6 +251,8 @@ void read_input_file()
   ifs >> number_of_primitives;
 
   //allocate memory to hold primitives(wasting memory but oh well) 
+  n_T = 0; 
+  n_S = 0; 
   T = new triangle[number_of_primitives];
   S = new sphere[number_of_primitives];
   // save all this info to your datastructures or global variables here
@@ -264,20 +266,30 @@ void read_input_file()
 	case 's':
 	case 'S':
 	  {
-
+		sphere temp_s; 
+        /*EXISTING VARS
 	    double center[3];
 	    double radius;
 	    double k_diffuse[3];
 	    double k_ambient[3];
 	    double k_specular;
 	    double n_specular;
-
+		*/
+		ifs >> temp_s.center.x >> temp_s.center.y >> temp_s.center.z; 
+		ifs >> temp_s.radius; 
+        ifs >> temp_s.m.k_diff_r >> temp_s.m.k_diff_g >> temp_s.m.k_diff_b;
+		ifs >> temp_s.m.k_amb_r >> temp_s.m.k_amb_g >> temp_s.m.k_amb_b; 
+		ifs >> temp_s.m.k_spec >> temp_s.m.n_spec;
+ 
+        /*EXISTING CODE
 	    ifs >> center[0] >> center[1] >> center[2];
 	    ifs >> radius;
 	    ifs >> k_diffuse[0] >> k_diffuse[1] >> k_diffuse[2];
 	    ifs >> k_ambient[0] >> k_ambient[1] >> k_ambient[2];
 	    ifs >> k_specular >> n_specular;
-
+        */
+		S[n_S]=temp_s; 
+		++n_S; 
 	    // add the sphere to your datastructures (primitive list, sphere list or such) here
 	  }
 	  break;
@@ -300,6 +312,7 @@ void read_input_file()
 	    ifs >> k_specular >> n_specular; 	    
 
 	    // add the triangle to your datastructure (primitive list, sphere list or such) here
+		++n_T; 
 	  }
 	  break;
 	default:
