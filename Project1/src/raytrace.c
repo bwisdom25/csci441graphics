@@ -19,6 +19,12 @@ typedef struct {
 }
 RGB;
 
+typedef struct {
+	double t;
+	int pid; 
+}
+intersectPrim; 
+
 /* ----------------------- */
 /*point class*/
 class point{
@@ -215,7 +221,9 @@ double intersectionS(ray r,sphere s){
          }
     }		 
 }
-	 
+//TODO: dse a strucouble intersectionT(ray r,triangle t) 
+
+
 
 /* ----------- Reading the input file ---------- */
 
@@ -225,6 +233,30 @@ triangle *T;
 sphere *S;
 int n_T,n_S;
 
+double intersection(ray r, int pid){
+	if( pid < n_T ){
+		//return intersectionT(ray r,T[pid]);
+    }else{
+		return intersectionS(r,S[pid]); 
+	}
+}
+
+intersectPrim closestIntersect(ray r){
+	intersectPrim temp; 
+	double mint=-1.0; 
+	double t; 
+	int pid;
+	for(int i=0;i<n_T+n_S-1;++i){
+		t=intersection(r,i);
+		if( t!=-1.0  && ( mint==-1.0 || t<mint )){
+			mint=t;		
+			pid=i;
+ 		}
+	}
+	temp.t=mint;
+	temp.pid=pid; 
+	return temp;
+}
 // ... and the input file reading function
 void read_input_file()
 {
@@ -288,7 +320,7 @@ void read_input_file()
 	    ifs >> k_ambient[0] >> k_ambient[1] >> k_ambient[2];
 	    ifs >> k_specular >> n_specular;
         */
-		S[n_S]=temp_s; 
+		S[i]=temp_s; 
 		++n_S; 
 	    // add the sphere to your datastructures (primitive list, sphere list or such) here
 	  }
@@ -296,6 +328,7 @@ void read_input_file()
 	case 'T':
 	case 't':
 	  {
+		//TODO: Read in triangle attributes, add triangle object to array 
 	    double a1[3];
 	    double a2[3];
 	    double a3[3];
