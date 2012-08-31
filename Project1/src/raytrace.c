@@ -36,8 +36,10 @@ class vector{
 	public:
 		double x,y,z;
 		double dot(const vector b);
-		void setVec(const point a, const point b);  
+		void setVec(const point a, const point b);
+		void setVec(const vector b);  
 		double getMag(); 
+		void toVec(const point a); 
 };
 
 vector operator+(const vector a, const vector b)
@@ -50,6 +52,15 @@ vector operator+(const vector a, const vector b)
 	return result; 
 }
 
+vector operator-(const vector a, const vector b)
+{
+	vector result; 
+	result.x = a.x - b.x;
+	result.y = a.y - b.y; 
+	result.z = a.z - b.z; 
+
+	return result; 
+}
 vector operator*(const double d, const vector a) 
 {
 	vector result; 
@@ -59,6 +70,8 @@ vector operator*(const double d, const vector a)
 
 	return result; 
 }
+
+
 double vector::dot( const vector b)
 {
 	return((x*b.x)+(y*b.y)+(z*b.z));
@@ -74,6 +87,11 @@ void vector::setVec(const point a, const point b)
 	z=a.z-b.z;
 }
 
+void vector::setVec(const vector b){
+	x=b.x;
+	y=b.y;
+	z=b.z;
+}
 double vector::getMag()
 {
 	return( sqrt((pow(x,2))+(pow(y,2))+(pow(z,2))) );
@@ -87,6 +105,12 @@ point operator+(const point a, const point b)
 	result.z = a.z + b.z; 
 
 	return result;
+}
+
+void vector::toVec(const point a){
+	x=a.x;
+	y=a.y;
+	z=a.z;
 }
 
 point operator-(const point a, const point b) 
@@ -219,7 +243,8 @@ double intersectionS(ray r,sphere s){
 			if(t1 < t2){ return t1; } 
 			else if(t2 < t1){ return t2; }
          }
-    }		 
+    }	
+	
 }
 //TODO: dse a strucouble intersectionT(ray r,triangle t) 
 
@@ -232,11 +257,12 @@ int resolution_x, resolution_y;
 triangle *T;
 sphere *S;
 int n_T,n_S;
+point viewpoint,lowerleft; 
+vector horz,vert; 
+
 
 double intersection(ray r, int pid){
-	if( pid < n_T ){
-		//return intersectionT(ray r,T[pid]);
-    }else{
+	if(pid < n_S){
 		return intersectionS(r,S[pid]); 
 	}
 }
@@ -246,7 +272,7 @@ intersectPrim closestIntersect(ray r){
 	double mint=-1.0; 
 	double t; 
 	int pid;
-	for(int i=0;i<n_T+n_S-1;++i){
+	for(int i=0;i<n_S-1;++i){
 		t=intersection(r,i);
 		if( t!=-1.0  && ( mint==-1.0 || t<mint )){
 			mint=t;		
@@ -257,26 +283,58 @@ intersectPrim closestIntersect(ray r){
 	temp.pid=pid; 
 	return temp;
 }
+
+ray eyeRay( int i, int j){
+	ray temp;
+	vector direct,tempA,tempB,tempC; 
+
+	temp.origin.x = viewpoint.x;
+	temp.origin.y = viewpoint.y;
+    temp.origin.z = viewpoint.z;
+	
+    vector l,e; 
+	l.toVec(lowerleft);
+	e.toVec(viewpoint);
+    tempA=(((i*0.5)/resolution_x)*horz);
+	tempB=(((i*0.5)/resolution_y)*vert);
+	tempC=l+tempA+tempB;
+	direct=tempC-e; 
+	temp.direction = direct; 
+	
+	return temp;
+}
+
+
+	
+
 // ... and the input file reading function
 void read_input_file()
 {
   ifstream ifs("input.txt");
   assert(ifs);
-
+  /*Existing data types
   double viewpoint[3];
   double screen_lower_left_corner[3];
   double screen_horizontal_vector[3];
   double screen_vertical_vector[3];
+  */
   double light_source[3];
   double light_intensity;
   double ambient_light_intensity;
   int number_of_primitives;
 
   ifs >> resolution_x >> resolution_y;
+  ifs >> viewpoint.x >> viewpoint.y >> viewpoint.z;
+  ifs >> lowerleft.x >> lowerleft.y >> lowerleft.z; 
+  ifs >> horz.x >> horz.y >> horz.z;
+  ifs >> vert.x >> vert.y >> vert.z; 
+
+  /*Existing code
   ifs >> viewpoint[0] >> viewpoint[1] >> viewpoint[2];
   ifs >> screen_lower_left_corner[0] >> screen_lower_left_corner[1] >> screen_lower_left_corner[2];
   ifs >> screen_horizontal_vector[0] >> screen_horizontal_vector[1] >> screen_horizontal_vector[2];
   ifs >> screen_vertical_vector[0] >> screen_vertical_vector[1] >> screen_vertical_vector[2];
+  */
   ifs >> light_source[0] >> light_source[1] >> light_source[2];
   ifs >> light_intensity;
   ifs >> ambient_light_intensity;
@@ -359,6 +417,7 @@ void read_input_file()
 int main ( int argc, char *argv[] )
 {
   int x,y;
+  intersectPrim prim; 
 
   read_input_file();
 
@@ -366,8 +425,24 @@ int main ( int argc, char *argv[] )
   for ( x=0; x<resolution_x; x++ )
     for ( y=0; y<resolution_y; y++ )
       {
-	RGB &pix = img.pixel(x,y);
+		RGB &pix = img.pixel(x,y);
 
+		ray r=eyeRay(x,y);
+		closestIntersect(r);
+		if(prim.t == -1.0){
+			pix.r=0.0;
+			pix.g=0.0;
+			pix.b=0.0;
+		}else{
+				if( prim.pid < n_T ){
+					//return rgb for pid of T 
+   				 }else{
+					pix.r=S[prim.pid].m.k_diff_r; 
+					pix.g=S[prim.pid].m.k_diff_g;
+					pix.b=S[prim.pid].m.k_diff_b;
+				}
+		}
+	
 	/* 
 	   call your raytracer here
 	   then assign the rgb values
@@ -375,9 +450,11 @@ int main ( int argc, char *argv[] )
 	*/
 
 	// this is just to produce a fun image...
+    /*
 	pix.r = 0.5+0.5*sin(sin(x/30.0)+y*y/700.0);
 	pix.g = 0.5+0.5*sin(y/71.0);
 	pix.b = 0.5+0.5*sin(x*x*x/120000.0+y*y/1700.0);
+    */
       }
 
   /* save the image */
