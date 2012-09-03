@@ -94,7 +94,7 @@ void vector::setVec(const vector b){
 }
 double vector::getMag()
 {
-	return( sqrt((pow(x,2))+(pow(y,2))+(pow(z,2))) );
+	return( sqrt( (x*x)+(y*y)+(z*z) ) );
 }
 
 point operator+(const point a, const point b) 
@@ -113,6 +113,9 @@ void vector::toVec(const point a){
 	z=a.z;
 }
 
+
+
+
 point operator-(const point a, const point b) 
 {
 	point result; 
@@ -122,6 +125,7 @@ point operator-(const point a, const point b)
 
 	return result;
 } 
+
 /*--------------------------------------------*/
 /*material class*/ 
 class material{
@@ -204,16 +208,19 @@ void image::save_to_ppm_file ( char *filename )
 }
 /*primative intersection functions*/ 
 
+ofstream outfile("output.txt");
+
 double intersectionS(ray r,sphere s){
 //Define coefficients for Quadtratic eqn
 	double A,B,C,Det,t1,t2; 
 	vector co; 
-	co.setVec(s.center,r.origin); 
+	co.setVec(r.origin,s.center); // o-c
+	C = pow(co.getMag(),2) - pow(s.radius,2); 
 
-	A = pow(co.getMag(),2) - pow(s.radius,2); 
-	B = r.direction.dot(2*co);
-	C = pow(r.direction.getMag(),2); 
+	B = 2*r.direction.dot(co);
 
+	A = pow(r.direction.getMag(),2); 
+   
 	//Caclulate the Determinant 
 	Det = pow(B,2) - (4*A*C); 
 
@@ -223,26 +230,23 @@ double intersectionS(ray r,sphere s){
     }else{ 
 		t1=(-B+sqrt(Det))/(2*A);
 		t2=(-B-sqrt(Det))/(2*A);
-		if(t1 == 0){
-			if(t2 > 0){
-				return t2;
-			}else{
+		if(Det == 0){
+			
+			if(t2 > 0){return t2;}
+			if(t1 > 0){return t1;}
+			else{
 				return -1.0; //line is tangent, but not on ray
 			}
-		}else if(t2 == 0){
-				if(t2 > 0){
-					return t2;
-				}else{
+		}else if(Det > 0){
+				 
+				if(t2 > 0 && t1 < 0 ){ return t2;}
+				if(t1 > 0 && t2 < 0 ){ return t1;}
+				if(t2 < t1){ return t2; } 
+				if(t1 < t2){ return t1; }				
+				else{
 					return -1.0; //line is tangent, but not on ray
 				}
-		}else if(t1 < 0 && t2 < 0){
-			return -1.0;//no intersection 
-		}else if(t1 > 0 && t2<0){ return t1; }
-		 else if(t2 > 0 && t1<0){ return t2; } 
-         else{
-			if(t1 < t2){ return t1; } 
-			else if(t2 < t1){ return t2; }
-         }
+		}
     }	
 	
 }
@@ -262,9 +266,9 @@ vector horz,vert;
 
 
 double intersection(ray r, int pid){
-	if(pid < n_S){
+	//if(pid < n_S){
 		return intersectionS(r,S[pid]); 
-	}
+	//}
 }
 
 intersectPrim closestIntersect(ray r){
@@ -272,11 +276,12 @@ intersectPrim closestIntersect(ray r){
 	double mint=-1.0; 
 	double t; 
 	int pid;
-	for(int i=0;i<n_S-1;++i){
+	for(int i=0;i<n_S;++i){
 		t=intersection(r,i);
 		if( t!=-1.0  && ( mint==-1.0 || t<mint )){
 			mint=t;		
 			pid=i;
+			
  		}
 	}
 	temp.t=mint;
@@ -295,8 +300,8 @@ ray eyeRay( int i, int j){
     vector l,e; 
 	l.toVec(lowerleft);
 	e.toVec(viewpoint);
-    tempA=(((i*0.5)/resolution_x)*horz);
-	tempB=(((i*0.5)/resolution_y)*vert);
+    tempA=(((i+0.5)/resolution_x)*horz);
+	tempB=(((j+0.5)/resolution_y)*vert);
 	tempC=l+tempA+tempB;
 	direct=tempC-e; 
 	temp.direction = direct; 
@@ -311,6 +316,8 @@ ray eyeRay( int i, int j){
 void read_input_file()
 {
   ifstream ifs("input.txt");
+  
+  
   assert(ifs);
   /*Existing data types
   double viewpoint[3];
@@ -346,7 +353,7 @@ void read_input_file()
   T = new triangle[number_of_primitives];
   S = new sphere[number_of_primitives];
   // save all this info to your datastructures or global variables here
-
+	sphere temp_s; 
   for ( int i=0; i<number_of_primitives; i++ )
     {
       char primitive_type;
@@ -356,7 +363,7 @@ void read_input_file()
 	case 's':
 	case 'S':
 	  {
-		sphere temp_s; 
+		
         /*EXISTING VARS
 	    double center[3];
 	    double radius;
@@ -379,6 +386,7 @@ void read_input_file()
 	    ifs >> k_specular >> n_specular;
         */
 		S[i]=temp_s; 
+		outfile << i << " " << temp_s.center.x <<" "<<temp_s.center.y<<" "<<temp_s.center.z << " "<<temp_s.radius<<endl;
 		++n_S; 
 	    // add the sphere to your datastructures (primitive list, sphere list or such) here
 	  }
@@ -418,8 +426,11 @@ int main ( int argc, char *argv[] )
 {
   int x,y;
   intersectPrim prim; 
-
+   
   read_input_file();
+
+  //FOR DEBUGGIN PURPOSES ONLY 
+
 
   image img(resolution_x,resolution_y);
   for ( x=0; x<resolution_x; x++ )
@@ -428,19 +439,16 @@ int main ( int argc, char *argv[] )
 		RGB &pix = img.pixel(x,y);
 
 		ray r=eyeRay(x,y);
-		closestIntersect(r);
+		prim=closestIntersect(r);
 		if(prim.t == -1.0){
 			pix.r=0.0;
 			pix.g=0.0;
 			pix.b=0.0;
-		}else{
-				if( prim.pid < n_T ){
-					//return rgb for pid of T 
-   				 }else{
-					pix.r=S[prim.pid].m.k_diff_r; 
-					pix.g=S[prim.pid].m.k_diff_g;
-					pix.b=S[prim.pid].m.k_diff_b;
-				}
+		}else{	
+					//outfile << S[prim.pid].m.k_diff_r << S[prim.pid].m.k_diff_g << S[prim.pid].m.k_diff_b;
+			pix.r=S[prim.pid].m.k_diff_r; 
+			pix.g=S[prim.pid].m.k_diff_g;
+			pix.b=S[prim.pid].m.k_diff_b;
 		}
 	
 	/* 
@@ -459,6 +467,6 @@ int main ( int argc, char *argv[] )
 
   /* save the image */
   img.save_to_ppm_file((char*)"output.ppm");
-
+   outfile.close();
   return 0;
 }
