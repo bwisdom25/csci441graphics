@@ -30,47 +30,45 @@ intersectPrim;
 class point{
 	public:
 		double x,y,z;
+		void addVector(const vector v); 
 };
+
+void point::addVector(const vector v){
+	x=x+v.x; 
+	y=y+v.y;
+	z=z+v.z; 
+}
+point operator-(const point a, const point b) 
+{
+	point result; 
+	result.x = a.x - b.x;
+	result.y = a.y - b.y; 
+	result.z = a.z - b.z; 
+
+	return result;
+} 
+
+point addFromVec(const point a, const vector d){
+	point temp;
+	
+	temp.x = a.x + d.x; 
+	temp.y = a.y + d.y;
+	temp.z = a.z + d.z;
+	
+	return temp;
+}
 /*vector class*/
 class vector{
 	public:
 		double x,y,z;
 		double dot(const vector b);
-		void setVec(const point a, const point b);
+		vector cross(const vector b); 
+		void setVec(const point a, const point b); 
 		void setVec(const vector b);  
 		double getMag(); 
 		void toVec(const point a); 
+		
 };
-
-vector operator+(const vector a, const vector b)
-{
-	vector result; 
-	result.x = a.x + b.x;
-	result.y = a.y + b.y; 
-	result.z = a.z + b.z; 
-
-	return result; 
-}
-
-vector operator-(const vector a, const vector b)
-{
-	vector result; 
-	result.x = a.x - b.x;
-	result.y = a.y - b.y; 
-	result.z = a.z - b.z; 
-
-	return result; 
-}
-vector operator*(const double d, const vector a) 
-{
-	vector result; 
-	result.x = d*a.x;
-	result.y = d*a.y; 
-	result.z = d*a.z; 
-
-	return result; 
-}
-
 
 double vector::dot( const vector b)
 {
@@ -78,6 +76,13 @@ double vector::dot( const vector b)
 }
 /*-------------------------------*/ 
 
+vector vector::cross( const vector b){
+	vector temp; 
+	temp.x = (y*b.z) - (z*b.y);
+	temp.y = (z*b.x) - (x*b.z);
+	temp.z = (x*b.y) - (y*b.x); 
+	return temp;
+}
 
 
 void vector::setVec(const point a, const point b)
@@ -114,17 +119,35 @@ void vector::toVec(const point a){
 }
 
 
-
-
-point operator-(const point a, const point b) 
+vector operator+(const vector a, const vector b)
 {
-	point result; 
+	vector result; 
 	result.x = a.x + b.x;
 	result.y = a.y + b.y; 
 	result.z = a.z + b.z; 
 
-	return result;
-} 
+	return result; 
+}
+
+vector operator-(const vector a, const vector b)
+{
+	vector result; 
+	result.x = a.x - b.x;
+	result.y = a.y - b.y; 
+	result.z = a.z - b.z; 
+
+	return result; 
+}
+vector operator*(const double d, const vector a) 
+{
+	vector result; 
+	result.x = d*a.x;
+	result.y = d*a.y; 
+	result.z = d*a.z; 
+
+	return result; 
+}
+
 
 /*--------------------------------------------*/
 /*material class*/ 
@@ -251,6 +274,48 @@ double intersectionS(ray r,sphere s){
 	
 }
 //TODO: dse a strucouble intersectionT(ray r,triangle t) 
+double intersectionT(ray r,triangle t){
+	vector a1a2,a1a3,n,temp1,temp2; 
+	vector v1,v2,v3; 
+	point p,a1,a2,a3; 
+
+	//Determine if point p is in triangles plane 
+	double t_val; 
+	a1a2.setVec(t.a2,t.a1); 
+	a1a3.setVec(t.a3,t.a1); 
+	
+	n=a1a2.cross(a1a3); 
+	
+	t_val=(temp1.setVec(t.a1,r.origin).dot(n))/(r.direction.dot(n)); 
+	
+	if(t_val<0){return -1.0;}
+	
+		p = addFromVec(r.origin,t_val*r.direction);
+        temp1.setVec(t.a1,t.a3);
+		
+		temp2.setVec(t.a2,p); 
+		v1 = temp1.cross(temp2); 
+		
+		temp1.setVec(t.a3,p);
+		
+		v2 = temp2.cross(temp1); 
+		
+		temp2.setVec(a1,p);
+		
+		v3 = temp1.cross(temp2); 
+		
+		if(v1.dot(v2) > 0 ){
+			if(v2.dot(v3) > 0){
+				if(v3.dot(v1) > 0){
+					return t_val; 
+				}
+			}
+		}
+	
+		
+		return -1.0;
+	
+}
 
 
 
@@ -266,9 +331,11 @@ vector horz,vert;
 
 
 double intersection(ray r, int pid){
-	//if(pid < n_S){
-		return intersectionS(r,S[pid]); 
-	//}
+	if(pid < n_T){
+		return intersectionT(r,T[pid]); 
+	}else{
+		return intersectionS(r,S[pid-n_T]);
+	}
 }
 
 intersectPrim closestIntersect(ray r){
@@ -354,6 +421,7 @@ void read_input_file()
   S = new sphere[number_of_primitives];
   // save all this info to your datastructures or global variables here
 	sphere temp_s; 
+	triangle temp_t;
   for ( int i=0; i<number_of_primitives; i++ )
     {
       char primitive_type;
@@ -385,7 +453,8 @@ void read_input_file()
 	    ifs >> k_ambient[0] >> k_ambient[1] >> k_ambient[2];
 	    ifs >> k_specular >> n_specular;
         */
-		S[i]=temp_s; 
+
+		S[i-n_T]=temp_s; 
 		outfile << i << " " << temp_s.center.x <<" "<<temp_s.center.y<<" "<<temp_s.center.z << " "<<temp_s.radius<<endl;
 		++n_S; 
 	    // add the sphere to your datastructures (primitive list, sphere list or such) here
@@ -411,7 +480,9 @@ void read_input_file()
 	    ifs >> k_specular >> n_specular; 	    
 
 	    // add the triangle to your datastructure (primitive list, sphere list or such) here
+		T[i-n_S]=temp_t;
 		++n_T; 
+		
 	  }
 	  break;
 	default:
