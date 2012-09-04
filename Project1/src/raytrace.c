@@ -1,6 +1,6 @@
 
 /*
-put your name here, just in case ****
+Bryan Wisdom ****
 Project 1: Ray Tracing
 CSCI 441
 */
@@ -190,7 +190,7 @@ void image::save_to_ppm_file ( char *filename )
 }
 /*primative intersection functions*/ 
 
-ofstream outfile("output.txt");
+  //FOR DEBUGGIN PURPOSES ONLY********************************  ofstream outfile("output.txt");
 
 double intersectionS(ray r,sphere s){
 //Define coefficients for Quadtratic eqn
@@ -233,7 +233,6 @@ double intersectionS(ray r,sphere s){
     }	
 	
 }
-//TODO: dse a strucouble intersectionT(ray r,triangle t) 
 
 double intersectionT(ray r,triangle t){
 
@@ -347,18 +346,14 @@ ray eyeRay( int i, int j){
 	
 
 // ... and the input file reading function
-void read_input_file()
+void read_input_file(char* inputfile)
 {
-  ifstream ifs("input4r.txt");
+  ifstream ifs(inputfile);
   
+
   
   assert(ifs);
-  /*Existing data types
-  double viewpoint[3];
-  double screen_lower_left_corner[3];
-  double screen_horizontal_vector[3];
-  double screen_vertical_vector[3];
-  */
+
   double light_source[3];
   double light_intensity;
   double ambient_light_intensity;
@@ -370,12 +365,6 @@ void read_input_file()
   ifs >> horz.x >> horz.y >> horz.z;
   ifs >> vert.x >> vert.y >> vert.z; 
 
-  /*Existing code
-  ifs >> viewpoint[0] >> viewpoint[1] >> viewpoint[2];
-  ifs >> screen_lower_left_corner[0] >> screen_lower_left_corner[1] >> screen_lower_left_corner[2];
-  ifs >> screen_horizontal_vector[0] >> screen_horizontal_vector[1] >> screen_horizontal_vector[2];
-  ifs >> screen_vertical_vector[0] >> screen_vertical_vector[1] >> screen_vertical_vector[2];
-  */
   ifs >> light_source[0] >> light_source[1] >> light_source[2];
   ifs >> light_intensity;
   ifs >> ambient_light_intensity;
@@ -399,30 +388,14 @@ void read_input_file()
 	case 'S':
 	  {
 		
-        /*EXISTING VARS
-	    double center[3];
-	    double radius;
-	    double k_diffuse[3];
-	    double k_ambient[3];
-	    double k_specular;
-	    double n_specular;
-		*/
 		ifs >> temp_s.center.x >> temp_s.center.y >> temp_s.center.z; 
 		ifs >> temp_s.radius; 
         ifs >> temp_s.m.k_diff_r >> temp_s.m.k_diff_g >> temp_s.m.k_diff_b;
 		ifs >> temp_s.m.k_amb_r >> temp_s.m.k_amb_g >> temp_s.m.k_amb_b; 
 		ifs >> temp_s.m.k_spec >> temp_s.m.n_spec;
- 
-        /*EXISTING CODE
-	    ifs >> center[0] >> center[1] >> center[2];
-	    ifs >> radius;
-	    ifs >> k_diffuse[0] >> k_diffuse[1] >> k_diffuse[2];
-	    ifs >> k_ambient[0] >> k_ambient[1] >> k_ambient[2];
-	    ifs >> k_specular >> n_specular;
-        */
 
 		S[i-n_T]=temp_s; 
-		//outfile << i << " " << temp_s.center.x <<" "<<temp_s.center.y<<" "<<temp_s.center.z << " "<<temp_s.radius<<endl;
+
 		++n_S; 
 	    // add the sphere to your datastructures (primitive list, sphere list or such) here
 	  }
@@ -439,7 +412,7 @@ void read_input_file()
 
 	    // add the triangle to your datastructure (primitive list, sphere list or such) here
 		T[i-n_S]=temp_t;
-		//outfile << i << " " << temp_t.a1.x <<" "<<temp_t.a1.y <<" "<<temp_t.a1.z  <<endl;
+
 		++n_T; 
 		
 	  }
@@ -448,20 +421,22 @@ void read_input_file()
 	  assert(0);
 	}
     }
-	//outfile << "NUM_OF_TRI: "<< n_T << "  NUM_OF_SPH: "<< n_S <<endl; 
 }
 
 /* ----------- main function ---------- */
 
 int main ( int argc, char *argv[] )
 {
+
+  //CHECK ARGC 
+  if(argc != 2 ){
+	cout << "ERROR: NUMBER OF ARGUMENTS"<<endl << "Correct Use: ./raytrace input_file.txt "<<endl; 
+	return 69;
+  }
   int x,y;
   intersectPrim prim; 
-   
-  read_input_file();
 
-  //FOR DEBUGGIN PURPOSES ONLY 
-
+  read_input_file(argv[1]);
 
   image img(resolution_x,resolution_y);
   for ( x=0; x<resolution_x; x++ )
@@ -476,7 +451,7 @@ int main ( int argc, char *argv[] )
 			pix.g=0.0;
 			pix.b=0.0;
 		}else{	
-			if(prim.pid < n_T){		//outfile << S[prim.pid].m.k_diff_r << S[prim.pid].m.k_diff_g << S[prim.pid].m.k_diff_b;
+			if(prim.pid < n_T){		
 				pix.r=T[prim.pid].m.k_diff_r; 
 				pix.g=T[prim.pid].m.k_diff_g;
 				pix.b=T[prim.pid].m.k_diff_b;
@@ -486,23 +461,18 @@ int main ( int argc, char *argv[] )
 				pix.b=S[prim.pid-n_T].m.k_diff_b;
 			}		
 		}
-	
-	/* 
-	   call your raytracer here
-	   then assign the rgb values
-	   it returns to the pixel 
-	*/
-
-	// this is just to produce a fun image...
-    /*
-	pix.r = 0.5+0.5*sin(sin(x/30.0)+y*y/700.0);
-	pix.g = 0.5+0.5*sin(y/71.0);
-	pix.b = 0.5+0.5*sin(x*x*x/120000.0+y*y/1700.0);
-    */
       }
-
+	
   /* save the image */
-  img.save_to_ppm_file((char*)"output.ppm");
-   outfile.close();
+
+  //manipulate input filename format input[#].txt to extract [#] 
+  //generate output[#].ppm filename 
+
+  string fileStringManip= string(argv[1]);
+  fileStringManip = fileStringManip.substr(0,fileStringManip.find(".txt"));  
+  string outputPPM = "output_"+fileStringManip+".ppm";
+
+   //DEBUGGING *************outfile.close();
+  img.save_to_ppm_file((char *)outputPPM.c_str());
   return 0;
 }
