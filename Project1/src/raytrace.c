@@ -26,53 +26,28 @@ typedef struct {
 intersectPrim; 
 
 /* ----------------------- */
-/*point class*/
-class point{
-	public:
-		double x,y,z;
-		void addVector(const vector v); 
-};
 
-void point::addVector(const vector v){
-	x=x+v.x; 
-	y=y+v.y;
-	z=z+v.z; 
-}
-point operator-(const point a, const point b) 
-{
-	point result; 
-	result.x = a.x - b.x;
-	result.y = a.y - b.y; 
-	result.z = a.z - b.z; 
 
-	return result;
-} 
-
-point addFromVec(const point a, const vector d){
-	point temp;
-	
-	temp.x = a.x + d.x; 
-	temp.y = a.y + d.y;
-	temp.z = a.z + d.z;
-	
-	return temp;
-}
 /*vector class*/
 class vector{
 	public:
 		double x,y,z;
 		double dot(const vector b);
+		double dot(const vector a, const vector b); 
 		vector cross(const vector b); 
-		void setVec(const point a, const point b); 
+		vector cross(const vector a, const vector b); 
 		void setVec(const vector b);  
-		double getMag(); 
-		void toVec(const point a); 
-		
+		double getMag(); 		
 };
 
 double vector::dot( const vector b)
 {
 	return((x*b.x)+(y*b.y)+(z*b.z));
+}
+
+double vector::dot(const vector a, const vector b)
+{
+	return((a.x*b.x)+(a.y*b.y)+(a.z*b.z));
 }
 /*-------------------------------*/ 
 
@@ -84,12 +59,12 @@ vector vector::cross( const vector b){
 	return temp;
 }
 
-
-void vector::setVec(const point a, const point b)
-{
-	x=a.x-b.x; 
-	y=a.y-b.y;
-	z=a.z-b.z;
+vector vector::cross(const vector a, const vector b){
+	vector temp; 
+	temp.x = (a.y*b.z) - (a.z*b.y);
+	temp.y = (a.z*b.x) - (a.x*b.z);
+	temp.z = (a.x*b.y) - (a.y*b.x); 
+	return temp;
 }
 
 void vector::setVec(const vector b){
@@ -100,22 +75,6 @@ void vector::setVec(const vector b){
 double vector::getMag()
 {
 	return( sqrt( (x*x)+(y*y)+(z*z) ) );
-}
-
-point operator+(const point a, const point b) 
-{
-	point result; 
-	result.x = a.x + b.x;
-	result.y = a.y + b.y; 
-	result.z = a.z + b.z; 
-
-	return result;
-}
-
-void vector::toVec(const point a){
-	x=a.x;
-	y=a.y;
-	z=a.z;
 }
 
 
@@ -162,14 +121,14 @@ class material{
 /*ray class*/ 
 class ray{ //charles 
 	public:
-		point origin; 
+		vector origin; 
 		vector direction; 
 }; 
 
 /*sphere class*/ 
 class sphere{
 	public:
-		point center;
+		vector center;
 		double radius;
 		material m; 
 }; 
@@ -177,7 +136,7 @@ class sphere{
 /*triangle class*/ 
 class triangle{
 	public: 
-		point a1,a2,a3;
+		vector a1,a2,a3;
 		material m;
 };
 		
@@ -237,11 +196,12 @@ double intersectionS(ray r,sphere s){
 //Define coefficients for Quadtratic eqn
 	double A,B,C,Det,t1,t2; 
 	vector co; 
-	co.setVec(r.origin,s.center); // o-c
+
+	co = r.origin - s.center; // o-c GIVES vector co 
+ 
+	//Calculate Coefficients
 	C = pow(co.getMag(),2) - pow(s.radius,2); 
-
 	B = 2*r.direction.dot(co);
-
 	A = pow(r.direction.getMag(),2); 
    
 	//Caclulate the Determinant 
@@ -274,47 +234,54 @@ double intersectionS(ray r,sphere s){
 	
 }
 //TODO: dse a strucouble intersectionT(ray r,triangle t) 
+
 double intersectionT(ray r,triangle t){
+
 	vector a1a2,a1a3,n,temp1,temp2; 
 	vector v1,v2,v3; 
-	point p,a1,a2,a3; 
+	vector p;
 
 	//Determine if point p is in triangles plane 
-	double t_val; 
-	a1a2.setVec(t.a2,t.a1); 
-	a1a3.setVec(t.a3,t.a1); 
+	double t_val,returnValue=-1.0; 
+	a1a2 = t.a2 - t.a1; 
+	a1a3 = t.a3 - t.a1; 
 	
-	n=a1a2.cross(a1a3); 
+	n = a1a2.cross(a1a3); 
+	temp1 = t.a1 - r.origin;
+	t_val=(temp1.dot(n))/(r.direction.dot(n)); 
+	if(t_val<0){returnValue = -1.0;}
 	
-	t_val=(temp1.setVec(t.a1,r.origin).dot(n))/(r.direction.dot(n)); 
-	
-	if(t_val<0){return -1.0;}
-	
-		p = addFromVec(r.origin,t_val*r.direction);
-        temp1.setVec(t.a1,t.a3);
+		p = r.origin + (t_val*r.direction);
+        
+		vector pa1 = t.a1 - p;
+        vector pa2 = t.a2 - p;
+        vector pa3 = t.a3 - p;
+
+        v1 = v1.cross(pa1, pa2);
+        v2 = v2.cross(pa2, pa3);
+        v3 = v3.cross(pa3, pa1);
 		
-		temp2.setVec(t.a2,p); 
-		v1 = temp1.cross(temp2); 
-		
-		temp1.setVec(t.a3,p);
-		
-		v2 = temp2.cross(temp1); 
-		
-		temp2.setVec(a1,p);
-		
-		v3 = temp1.cross(temp2); 
-		
-		if(v1.dot(v2) > 0 ){
-			if(v2.dot(v3) > 0){
-				if(v3.dot(v1) > 0){
-					return t_val; 
+
+
+		if(v1.dot(v2) >= 0 ){
+			if(v2.dot(v3) >= 0){
+				if(v3.dot(v1) >= 0){
+					returnValue = t_val; 
+				}
+			}
+		}
+
+		if(v1.dot(v2) <= 0 ){
+			if(v2.dot(v3) <= 0){
+				if(v3.dot(v1) <= 0){
+					returnValue = t_val; 
 				}
 			}
 		}
 	
 		
-		return -1.0;
-	
+		return returnValue;
+
 }
 
 
@@ -326,7 +293,7 @@ int resolution_x, resolution_y;
 triangle *T;
 sphere *S;
 int n_T,n_S;
-point viewpoint,lowerleft; 
+vector viewpoint,lowerleft; 
 vector horz,vert; 
 
 
@@ -343,7 +310,7 @@ intersectPrim closestIntersect(ray r){
 	double mint=-1.0; 
 	double t; 
 	int pid;
-	for(int i=0;i<n_S;++i){
+	for(int i=0;i<(n_S+n_T);++i){
 		t=intersection(r,i);
 		if( t!=-1.0  && ( mint==-1.0 || t<mint )){
 			mint=t;		
@@ -365,8 +332,8 @@ ray eyeRay( int i, int j){
     temp.origin.z = viewpoint.z;
 	
     vector l,e; 
-	l.toVec(lowerleft);
-	e.toVec(viewpoint);
+	l = lowerleft;
+	e = viewpoint;
     tempA=(((i+0.5)/resolution_x)*horz);
 	tempB=(((j+0.5)/resolution_y)*vert);
 	tempC=l+tempA+tempB;
@@ -382,7 +349,7 @@ ray eyeRay( int i, int j){
 // ... and the input file reading function
 void read_input_file()
 {
-  ifstream ifs("input.txt");
+  ifstream ifs("input9r.txt");
   
   
   assert(ifs);
@@ -455,7 +422,7 @@ void read_input_file()
         */
 
 		S[i-n_T]=temp_s; 
-		outfile << i << " " << temp_s.center.x <<" "<<temp_s.center.y<<" "<<temp_s.center.z << " "<<temp_s.radius<<endl;
+		//outfile << i << " " << temp_s.center.x <<" "<<temp_s.center.y<<" "<<temp_s.center.z << " "<<temp_s.radius<<endl;
 		++n_S; 
 	    // add the sphere to your datastructures (primitive list, sphere list or such) here
 	  }
@@ -463,24 +430,16 @@ void read_input_file()
 	case 'T':
 	case 't':
 	  {
-		//TODO: Read in triangle attributes, add triangle object to array 
-	    double a1[3];
-	    double a2[3];
-	    double a3[3];
-	    double k_diffuse[3];
-	    double k_ambient[3];
-	    double k_specular;
-	    double n_specular;
-	    
-	    ifs >> a1[0] >> a1[1] >> a1[2];
-	    ifs >> a2[0] >> a2[1] >> a2[2];
-	    ifs >> a3[0] >> a3[1] >> a3[2];
-	    ifs >> k_diffuse[0] >> k_diffuse[1] >> k_diffuse[2];
-	    ifs >> k_ambient[0] >> k_ambient[1] >> k_ambient[2];
-	    ifs >> k_specular >> n_specular; 	    
+	    ifs >> temp_t.a1.x >> temp_t.a1.y >> temp_t.a1.z;
+	    ifs >> temp_t.a2.x >> temp_t.a2.y >> temp_t.a2.z;
+	    ifs >> temp_t.a3.x >> temp_t.a3.y >> temp_t.a3.z;
+	    ifs >> temp_t.m.k_diff_r >> temp_t.m.k_diff_g >> temp_t.m.k_diff_b;
+	    ifs >> temp_t.m.k_amb_r >> temp_t.m.k_amb_g >> temp_t.m.k_amb_b;
+	    ifs >> temp_t.m.k_spec >> temp_t.m.n_spec ; 	    
 
 	    // add the triangle to your datastructure (primitive list, sphere list or such) here
 		T[i-n_S]=temp_t;
+		//outfile << i << " " << temp_t.a1.x <<" "<<temp_t.a1.y <<" "<<temp_t.a1.z  <<endl;
 		++n_T; 
 		
 	  }
@@ -489,6 +448,7 @@ void read_input_file()
 	  assert(0);
 	}
     }
+	//outfile << "NUM_OF_TRI: "<< n_T << "  NUM_OF_SPH: "<< n_S <<endl; 
 }
 
 /* ----------- main function ---------- */
@@ -516,10 +476,15 @@ int main ( int argc, char *argv[] )
 			pix.g=0.0;
 			pix.b=0.0;
 		}else{	
-					//outfile << S[prim.pid].m.k_diff_r << S[prim.pid].m.k_diff_g << S[prim.pid].m.k_diff_b;
-			pix.r=S[prim.pid].m.k_diff_r; 
-			pix.g=S[prim.pid].m.k_diff_g;
-			pix.b=S[prim.pid].m.k_diff_b;
+			if(prim.pid < n_T){		//outfile << S[prim.pid].m.k_diff_r << S[prim.pid].m.k_diff_g << S[prim.pid].m.k_diff_b;
+				pix.r=T[prim.pid].m.k_diff_r; 
+				pix.g=T[prim.pid].m.k_diff_g;
+				pix.b=T[prim.pid].m.k_diff_b;
+			}else{
+				pix.r=S[prim.pid-n_T].m.k_diff_r; 
+				pix.g=S[prim.pid-n_T].m.k_diff_g;
+				pix.b=S[prim.pid-n_T].m.k_diff_b;
+			}		
 		}
 	
 	/* 
