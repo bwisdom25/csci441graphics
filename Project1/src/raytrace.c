@@ -349,7 +349,7 @@ ray eyeRay( int i, int j){
 // ... and the input file reading function
 void read_input_file()
 {
-  ifstream ifs("input9r.txt");
+  ifstream ifs("input4r.txt");
   
   
   assert(ifs);
@@ -467,7 +467,7 @@ int main ( int argc, char *argv[] )
   for ( x=0; x<resolution_x; x++ )
     for ( y=0; y<resolution_y; y++ )
       {
-		RGB &pix = img.pixel(x,y);
+		RGB &pix = img.pixel(x,resolution_y-y-1);
 
 		ray r=eyeRay(x,y);
 		prim=closestIntersect(r);
