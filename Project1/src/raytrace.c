@@ -378,11 +378,27 @@ vector Lvector( vector p){
 	return normalize(light_source - p);
 }
 
+bool inShadow(vector p, int pid){
+	ray r;
+	double t; 
+	r.origin = p; 
+	r.direction = light_source - p; 
+
+	for(int i=0; i < (n_T+n_S) ; ++i){
+		if( i != pid ){
+			t=intersection(r,i);
+			if( t >= 0 && t<=1){ return true; }
+		}
+	}
+	return false;
+}
+		
+
 RGB illuminati( vector p , int pid ){
 	RGB returnVal;
 	vector norm = normal ( p, pid ); 
 	
-	if( norm.dot(light_source - p) < 0 ){
+	if( norm.dot(light_source - p) < 0 || inShadow(p,pid) ){
 		if(pid < n_T){ //TRIANGLE
 			//p is in shadow of own primitive 
 			returnVal.r = T[pid].m.k_amb_r*ambient_light_intensity;
@@ -419,6 +435,7 @@ RGB illuminati( vector p , int pid ){
 	
 	return returnVal;
 }
+
 		 
 	
 
