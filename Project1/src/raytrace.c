@@ -97,6 +97,14 @@ vector operator-(const vector a, const vector b)
 
 	return result; 
 }
+
+vector operator-(vector a)
+{
+	a.x = -a.x;
+	a.y = -a.y;
+	a.z = -a.z;
+	return a; 
+}
 vector operator*(const double d, const vector a) 
 {
 	vector result; 
@@ -105,6 +113,16 @@ vector operator*(const double d, const vector a)
 	result.z = d*a.z; 
 
 	return result; 
+}
+
+vector normalize(vector a)
+{
+ 	vector temp;
+	temp.x = (a.x)/(a.getMag());
+	temp.y = (a.y)/(a.getMag());
+	temp.z = (a.z)/(a.getMag()); 
+	
+	return temp;
 }
 
 
@@ -292,9 +310,9 @@ int resolution_x, resolution_y;
 triangle *T;
 sphere *S;
 int n_T,n_S;
-vector viewpoint,lowerleft; 
+vector viewpoint,lowerleft,light_source; 
 vector horz,vert; 
-
+double ambient_light_intensity,light_intensity;
 
 double intersection(ray r, int pid){
 	if(pid < n_T){
@@ -342,7 +360,66 @@ ray eyeRay( int i, int j){
 	return temp;
 }
 
+vector normal( vector p , int pid){
+	if ( pid < n_T ){
+		vector n0 = (T[pid].a3 - T[pid].a1).cross(T[pid].a2 - T[pid].a1);
+		if ( n0.dot(viewpoint -T[pid].a1) >= 0 ){ return n0; }
+		else { return -n0; } 
+	} else {
+		return p - S[pid-n_T].center;
+	}
+}
 
+vector Vvector( vector p){
+	return normalize(viewpoint - p);
+}
+
+vector Lvector( vector p){
+	return normalize(light_source - p);
+}
+
+RGB illuminati( vector p , int pid ){
+	RGB returnVal;
+	vector norm = normal ( p, pid ); 
+	
+	if( norm.dot(light_source - p) < 0 ){
+		if(pid < n_T){ //TRIANGLE
+			//p is in shadow of own primitive 
+			returnVal.r = T[pid].m.k_amb_r*ambient_light_intensity;
+			returnVal.g = T[pid].m.k_amb_g*ambient_light_intensity;
+			returnVal.b = T[pid].m.k_amb_b*ambient_light_intensity;
+		}else{	//SPHERE
+			returnVal.r = S[pid-n_T].m.k_amb_r*ambient_light_intensity;
+			returnVal.g = S[pid-n_T].m.k_amb_g*ambient_light_intensity;
+			returnVal.b = S[pid-n_T].m.k_amb_b*ambient_light_intensity;
+		}
+	} else {
+		vector N = normalize(norm);
+		vector L = Lvector(p);
+		vector V = Vvector(p);
+		vector H = normalize(L+V); 
+		double dist = sqrt(pow((light_source.x-p.x),2) + pow((light_source.y-p.y),2) + pow((light_source.z-p.z),2));
+		double c2=1;
+		double c1=0;
+		double c0=0;
+		
+		//double atten = (light_intensity/((c2*dist*dist)+(c1*dist)+(c0)));
+		double atten = light_intensity;
+
+		if(pid < n_T){
+			returnVal.r =  atten * ( (T[pid].m.k_diff_r*(N.dot(L)) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec)) ) + T[pid].m.k_amb_r*ambient_light_intensity); 
+			returnVal.g =  atten * ( (T[pid].m.k_diff_g*(N.dot(L)) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec)) ) + T[pid].m.k_amb_g*ambient_light_intensity);
+			returnVal.b =  atten * ( (T[pid].m.k_diff_b*(N.dot(L)) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec)) ) + T[pid].m.k_amb_b*ambient_light_intensity);  
+		} else { 
+			returnVal.r =  atten * ( (S[pid-n_T].m.k_diff_r*(N.dot(L)) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec)) ) + S[pid-n_T].m.k_amb_r*ambient_light_intensity); 
+			returnVal.g =  atten * ( (S[pid-n_T].m.k_diff_g*(N.dot(L)) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec)) ) + S[pid-n_T].m.k_amb_g*ambient_light_intensity);
+			returnVal.b =  atten * ( (S[pid-n_T].m.k_diff_b*(N.dot(L)) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec)) ) + S[pid-n_T].m.k_amb_b*ambient_light_intensity);  
+		}
+	}
+	
+	return returnVal;
+}
+		 
 	
 
 // ... and the input file reading function
@@ -354,9 +431,6 @@ void read_input_file(char* inputfile)
   
   assert(ifs);
 
-  double light_source[3];
-  double light_intensity;
-  double ambient_light_intensity;
   int number_of_primitives;
 
   ifs >> resolution_x >> resolution_y;
@@ -365,7 +439,7 @@ void read_input_file(char* inputfile)
   ifs >> horz.x >> horz.y >> horz.z;
   ifs >> vert.x >> vert.y >> vert.z; 
 
-  ifs >> light_source[0] >> light_source[1] >> light_source[2];
+  ifs >> light_source.x >> light_source.y >> light_source.z;
   ifs >> light_intensity;
   ifs >> ambient_light_intensity;
   ifs >> number_of_primitives;
@@ -412,7 +486,7 @@ void read_input_file(char* inputfile)
 
 	    // add the triangle to your datastructure (primitive list, sphere list or such) here
 		T[i-n_S]=temp_t;
-
+  
 		++n_T; 
 		
 	  }
@@ -435,6 +509,8 @@ int main ( int argc, char *argv[] )
   }
   int x,y;
   intersectPrim prim; 
+  RGB calcPix; 
+  vector p; 
 
   read_input_file(argv[1]);
 
@@ -443,7 +519,7 @@ int main ( int argc, char *argv[] )
     for ( y=0; y<resolution_y; y++ )
       {
 		RGB &pix = img.pixel(x,resolution_y-y-1);
-
+		
 		ray r=eyeRay(x,y);
 		prim=closestIntersect(r);
 		if(prim.t == -1.0){
@@ -451,6 +527,7 @@ int main ( int argc, char *argv[] )
 			pix.g=0.0;
 			pix.b=0.0;
 		}else{	
+			/*
 			if(prim.pid < n_T){		
 				pix.r=T[prim.pid].m.k_diff_r; 
 				pix.g=T[prim.pid].m.k_diff_g;
@@ -459,7 +536,14 @@ int main ( int argc, char *argv[] )
 				pix.r=S[prim.pid-n_T].m.k_diff_r; 
 				pix.g=S[prim.pid-n_T].m.k_diff_g;
 				pix.b=S[prim.pid-n_T].m.k_diff_b;
-			}		
+			*/ 
+			 	p = r.origin + prim.t*r.direction; 
+				calcPix = illuminati(p,prim.pid); 
+				
+				pix.r=calcPix.r;
+				pix.g=calcPix.g;
+				pix.b=calcPix.b;
+					
 		}
       }
 	
