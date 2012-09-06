@@ -407,13 +407,13 @@ RGB illuminati( vector p , int pid ){
 		double atten = light_intensity;
 
 		if(pid < n_T){
-			returnVal.r =  atten * ( (T[pid].m.k_diff_r*(N.dot(L)) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec)) ) + T[pid].m.k_amb_r*ambient_light_intensity); 
-			returnVal.g =  atten * ( (T[pid].m.k_diff_g*(N.dot(L)) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec)) ) + T[pid].m.k_amb_g*ambient_light_intensity);
-			returnVal.b =  atten * ( (T[pid].m.k_diff_b*(N.dot(L)) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec)) ) + T[pid].m.k_amb_b*ambient_light_intensity);  
+			returnVal.r =  atten*((T[pid].m.k_diff_r*(N.dot(L))) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec))) + T[pid].m.k_amb_r*ambient_light_intensity; 
+			returnVal.g =  atten*((T[pid].m.k_diff_g*(N.dot(L))) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec))) + T[pid].m.k_amb_g*ambient_light_intensity;
+			returnVal.b =  atten*((T[pid].m.k_diff_b*(N.dot(L))) + (T[pid].m.k_spec*pow(H.dot(N),T[pid].m.n_spec))) + T[pid].m.k_amb_b*ambient_light_intensity;  
 		} else { 
-			returnVal.r =  atten * ( (S[pid-n_T].m.k_diff_r*(N.dot(L)) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec)) ) + S[pid-n_T].m.k_amb_r*ambient_light_intensity); 
-			returnVal.g =  atten * ( (S[pid-n_T].m.k_diff_g*(N.dot(L)) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec)) ) + S[pid-n_T].m.k_amb_g*ambient_light_intensity);
-			returnVal.b =  atten * ( (S[pid-n_T].m.k_diff_b*(N.dot(L)) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec)) ) + S[pid-n_T].m.k_amb_b*ambient_light_intensity);  
+			returnVal.r =  atten *((S[pid-n_T].m.k_diff_r*(N.dot(L))) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec))) + S[pid-n_T].m.k_amb_r*ambient_light_intensity; 
+			returnVal.g =  atten *((S[pid-n_T].m.k_diff_g*(N.dot(L))) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec))) + S[pid-n_T].m.k_amb_g*ambient_light_intensity;
+			returnVal.b =  atten *((S[pid-n_T].m.k_diff_b*(N.dot(L))) + (S[pid-n_T].m.k_spec*pow(H.dot(N),S[pid-n_T].m.n_spec))) + S[pid-n_T].m.k_amb_b*ambient_light_intensity;  
 		}
 	}
 	
