@@ -242,6 +242,7 @@ double intersectionS(ray r,sphere s){
 				 
 				if(t2 > 0 && t1 < 0 ){ return t2;}
 				if(t1 > 0 && t2 < 0 ){ return t1;}
+				if(t1 < 0 && t2 < 0 ){ return -1.0;}
 				if(t2 < t1){ return t2; } 
 				if(t1 < t2){ return t1; }				
 				else{
